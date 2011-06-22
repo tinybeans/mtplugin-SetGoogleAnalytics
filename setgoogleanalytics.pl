@@ -2,6 +2,15 @@ package MT::Plugin::SetGoogleAnalytics;
 
 use strict;
 use base qw( MT::Plugin );
+use MT::Log;
+use Data::Dumper;
+sub doLog {
+    my ($msg) = @_;     return unless defined($msg);
+    my $log = MT::Log->new;
+    $log->message($msg);
+    $log->save or die $log->errstr;
+}
+
 my $plugin = MT::Plugin::SetGoogleAnalytics->new({
 	id =>'setgoogleanalytics',
 	key => __PACKAGE__,
@@ -31,23 +40,16 @@ sub config_template{
 EOT
 }
 
-sub option1{
-	my $plugin = shift;
-	my ($blog_id) =@_;
-	my %plugin_param;
-	
-	$plugin->load_config(\%plugin_param,'blog:'.$blog_id);
-	my $value = $plugin_param{setanalyticsID};
-	unless($value){
-		$plugin->load_config(\%plugin_param,'system');
-		$value =$plugin_param{setanalyticsID};
-	}
-	$value;
-}
 sub set_google_analytics{
 	my ($cb, %args) = @_;
 	my $content_ref = $args{content};
-	my $getanalyticsID = $plugin->option1;
+	
+	my $blog = $args{Blog};
+    my $class = $blog->{column_values}->{class};
+	my $id = $class eq 'website' ? $blog->{column_values}->{id} : $blog->{column_values}->{parent_id};
+	my $w_value = $plugin->get_config_value('setanalyticsID', 'blog:'.$id);
+	my $s_value = $plugin->get_config_value('setanalyticsID', 'system');
+    my $getanalyticsID = defined $w_value ? $w_value : $s_value;
 	my $analyticsCode =<<EOT;
 <script type="text/javascript"> 
   var _gaq = _gaq || [];
